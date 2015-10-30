@@ -37,9 +37,9 @@ def _get_list_of_committed_files():
     files = []
     # pylint: disable=E1103
     diff_index_cmd = 'git diff-index --cached %s' % _current_commit()
-    output = subprocess.check_output(
-        diff_index_cmd.split()
-    )
+    output = subprocess.Popen(
+        diff_index_cmd.split(), stdout=subprocess.PIPE
+    ).communicate()[0]
     for result in output.split('\n'):
         if result != '':
             result = result.split()
@@ -109,7 +109,7 @@ def check_repo(
             if _is_python_file(filename):
                 python_files.append((filename, None))
         except IOError:
-            print 'File not found (probably deleted): {}\t\tSKIPPED'.format(
+            print 'File not found (probably deleted): {0}\t\tSKIPPED'.format(
                 filename)
 
     # Don't do anything if there are no Python files
@@ -123,7 +123,8 @@ def check_repo(
         if conf.has_option('pre-commit-hook', 'command'):
             pylint = conf.get('pre-commit-hook', 'command')
         if conf.has_option('pre-commit-hook', 'params'):
-            pylint_params += ' ' + conf.get('pre-commit-hook', 'params')
+            #pylint_params += ' ' + conf.get('pre-commit-hook', 'params')
+            pylint_params = conf.get('pre-commit-hook', 'params')
         if conf.has_option('pre-commit-hook', 'limit'):
             limit = float(conf.get('pre-commit-hook', 'limit'))
 
@@ -134,7 +135,7 @@ def check_repo(
         if os.path.basename(python_file) == '__init__.py':
             if os.stat(python_file).st_size == 0:
                 print(
-                    'Skipping pylint on {} (empty __init__.py)..'
+                    'Skipping pylint on {0} (empty __init__.py)..'
                     '\tSKIPPED'.format(python_file))
 
                 # Bump parsed files
@@ -142,7 +143,7 @@ def check_repo(
                 continue
 
         # Start pylinting
-        sys.stdout.write("Running pylint on {} (file {}/{})..\t".format(
+        sys.stdout.write("Running pylint on {0} (file {1}/{2})..\t".format(
             python_file, i, len(python_files)))
         sys.stdout.flush()
         try:
@@ -151,9 +152,9 @@ def check_repo(
             if pylint_params:
                 command += pylint_params.split()
                 if '--rcfile' not in pylint_params:
-                    command.append('--rcfile={}'.format(pylintrc))
+                    command.append('--rcfile={0}'.format(pylintrc))
             else:
-                command.append('--rcfile={}'.format(pylintrc))
+                command.append('--rcfile={0}'.format(pylintrc))
 
 
             command.append(python_file)
@@ -176,7 +177,7 @@ def check_repo(
             all_filed_passed = False
 
         # Add some output
-        print('{:.2}/10.00\t{}'.format(decimal.Decimal(score), status))
+        print('{0:.2}/10.00\t{1}'.format(decimal.Decimal(str(score)), status))
         if 'FAILED' in status:
             if suppress_report:
                 command.append('--reports=n')
